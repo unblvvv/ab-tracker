@@ -1,0 +1,63 @@
+{
+	"manifest_version": 1,
+	"type": "WebApp",
+	"meta": {
+		"name": "AbTracker",
+		"author": "unblv",
+		"version": "1.0.0",
+		"minimum-overwolf-version": "0.195.0",
+		"description": "AbTracker - stats and ability tracker",
+		"icon": "icon.png"
+	},
+
+	"permissions": ["GameInfo", "RunningGameEvents", "Hotkeys"],
+
+	"data": {
+		"start_window": "background",
+		"windows": {
+			"background": {
+				"file": "windows/background/background.html",
+				"is_background_page": true
+			},
+			"in_game": {
+				"file": "windows/in_game/in_game.html",
+				"in_game_only": true,
+				"resizable": true,
+				"transparent": true,
+				"override_on_update": true,
+				"size": {
+					"width": 1212,
+					"height": 699
+				},
+				"min_size": {
+					"width": 1212,
+					"height": 699
+				}
+			}
+		},
+
+		"hotkeys": {
+			"show_hide_in_game": {
+				"title": "Toggle in-game window",
+				"action-type": "custom",
+				"default": "Ctrl+G"
+			}
+		},
+
+		"game_targeting": {
+			"type": "dedicated",
+			"game_ids": [5426]
+		},
+
+		"game_events": [5426],
+
+		"launch_events": [
+			{
+				"event": "GameLaunch",
+				"tracked": true,
+				"start_minimized": true,
+				"event_data": { "game_ids": [5426] }
+			}
+		]
+	}
+}
