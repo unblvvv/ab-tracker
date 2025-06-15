@@ -1,5 +1,7 @@
 /// <reference types="@overwolf/types" />
 
+let isManuallyHidden = false
+
 function isLoL(gameId: number): boolean {
 	return Math.floor(gameId / 10) === 5426
 }
@@ -22,8 +24,10 @@ function toggleInGameWindow() {
 						stateResult.window_state === 'maximized'
 
 					if (isVisible) {
+						isManuallyHidden = true
 						overwolf.windows.hide(result.window.id)
 					} else {
+						isManuallyHidden = false
 						overwolf.windows.restore(result.window.id)
 					}
 				} else {
@@ -37,13 +41,13 @@ function toggleInGameWindow() {
 }
 
 overwolf.games.onGameInfoUpdated.addListener(res => {
-	if (res.gameInfo?.isRunning && isLoL(res.gameInfo.id)) {
+	if (res.gameInfo?.isRunning && isLoL(res.gameInfo.id) && !isManuallyHidden) {
 		launchInGameWindow()
 	}
 })
 
 overwolf.games.getRunningGameInfo(res => {
-	if (res?.isRunning && isLoL(res.id)) {
+	if (res?.isRunning && isLoL(res.id) && !isManuallyHidden) {
 		launchInGameWindow()
 	}
 })
