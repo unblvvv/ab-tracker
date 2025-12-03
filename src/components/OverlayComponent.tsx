@@ -1,299 +1,117 @@
-import React, { useEffect, useState } from 'react'
-import '../../public/cart.css'
-import '../../public/general.css'
-import '../../public/header.css'
-import '../../public/ingame.css'
+/**
+ * OverlayComponent - Main in-game overlay component
+ * Displays participant information for both teams with modern, modular architecture
+ */
+
+import React, { useMemo } from "react";
+import { useOverwolfWindow } from "../hooks/useOverwolfWindow";
+import { useGameParticipants } from "../hooks/useGameParticipants";
+import { groupParticipantsByTeam } from "../utils/game.utils";
+import { WINDOW_NAMES } from "../constants/game.constants";
+import { Header } from "./Header/Header";
+import { TeamColumn } from "./TeamColumn/TeamColumn";
+import { logger } from "../utils/logger.utils";
 
 const OverlayComponent: React.FC = () => {
-	const [participants, setParticipants] = useState<any[]>([])
+	// Window controls
+	const { minimize } = useOverwolfWindow({
+		windowName: WINDOW_NAMES.IN_GAME,
+		enableDrag: true,
+		dragElementId: "header",
+	});
 
-	useEffect(() => {
-		const closeButton = document.getElementById('closeButton')
-		const header = document.getElementById('header')
-		const hotkeyElement = document.getElementById('hotkey')
+	// Game participants data
+	const { participants, isLoading, isGameLive, error } = useGameParticipants({
+		enabled: true,
+		onGameStart: (participants) => {
+			logger.info("Game started!", { participantCount: participants.length });
+		},
+		onGameEnd: () => {
+			logger.info("Game ended!");
+		},
+	});
 
-		if (header) {
-			header.addEventListener('mousedown', () => {
-				overwolf.windows.getCurrentWindow(result => {
-					if (result.success) {
-						overwolf.windows.dragMove(result.window.id)
-					}
-				})
-			})
-		}
+	// Group participants by team
+	const { team100, team200 } = useMemo(() => {
+		return groupParticipantsByTeam(participants);
+	}, [participants]);
 
-		overwolf.settings.hotkeys.get(result => {
-			if (result.success && result.games) {
-				const hotkey = result.games['5426']?.find(
-					hk => hk.name === 'show_hide_in_game'
-				)
-				if (hotkey && hotkey.binding && hotkeyElement) {
-					hotkeyElement.textContent = hotkey.binding
-				}
-			}
-		})
+	// Render loading state
+	if (isLoading && participants.length === 0) {
+		return (
+			<div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
+				<div className="gradient-bg" />
+				<Header onMinimize={minimize} />
+				<main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10">
+					<div className="flex flex-col items-center justify-center min-h-[400px] gap-5">
+						<div className="loading-spinner" />
+						<p className="text-text-tertiary text-base font-medium m-0 animate-pulse">Loading game data...</p>
+					</div>
+				</main>
+			</div>
+		);
+	}
 
-		const closeHandler = () => overwolf.windows.minimize('in_game')
-		closeButton?.addEventListener('click', closeHandler)
+	// Render error state
+	if (error && !isGameLive) {
+		return (
+			<div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
+				<div className="gradient-bg" />
+				<Header onMinimize={minimize} />
+				<main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10">
+					<div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-center p-10">
+						<p className="text-error text-lg font-semibold m-0">Waiting for game to start...</p>
+						<span className="text-text-tertiary text-sm italic">{error}</span>
+					</div>
+				</main>
+			</div>
+		);
+	}
 
-		return () => {
-			closeButton?.removeEventListener('click', closeHandler)
-			if (header) {
-				header.removeEventListener('mousedown', () => {
-					overwolf.windows.getCurrentWindow(result => {
-						if (result.success) {
-							overwolf.windows.dragMove(result.window.id)
-						}
-					})
-				})
-			}
-		}
-	}, [])
+	// Render empty state
+	if (!isGameLive || participants.length === 0) {
+		return (
+			<div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
+				<div className="gradient-bg" />
+				<Header onMinimize={minimize} />
+				<main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10">
+					<div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center p-10">
+						<h2 className="text-2xl font-bold m-0 gradient-text">Waiting for game...</h2>
+						<p className="text-text-tertiary text-base m-0 max-w-md leading-relaxed">
+							Start a League of Legends match to see participant information.
+						</p>
+					</div>
+				</main>
+			</div>
+		);
+	}
 
-	useEffect(() => {
-		let interval: NodeJS.Timeout
-
-		const pollGameState = async () => {
-			try {
-				const statsRes = await fetch(
-					'https://127.0.0.1:2999/liveclientdata/gamestats'
-				)
-				if (!statsRes.ok) throw new Error('Game not live')
-
-				if (participants.length === 0) {
-					const nameRes = await fetch(
-						'https://127.0.0.1:2999/liveclientdata/activeplayername'
-					)
-					const summonerFullName = await nameRes.text()
-					const [name, tag] = summonerFullName.replace(/"/g, '').split('#')
-
-					const backendRes = await fetch(
-						`http://localhost:8080/account/${name}/${tag}`
-					)
-					const data = await backendRes.json()
-
-					if (data?.currentGame?.participants) {
-						setParticipants(data.currentGame.participants)
-					}
-				}
-			} catch (err) {
-				if (participants.length > 0) {
-					setParticipants([])
-				}
-			}
-		}
-
-		interval = setInterval(pollGameState, 5000)
-
-		return () => clearInterval(interval)
-	}, [participants])
-
-	const team100 = participants.filter(p => p.teamId === 100)
-	const team200 = participants.filter(p => p.teamId === 200)
-
+	// Render main overlay with teams
 	return (
-		<div className='overlay-container'>
-			<div className='overlay-gradient' />
+		<div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
+			<div className="gradient-bg" />
 
-			<header id='header' className='app-header'>
-				<h1>AbTracker</h1>
-				<h1 className='hotkey-text'>
-					Show/Hide Hotkey: <kbd id='hotkey'></kbd>
-				</h1>
-				<div className='window-controls-group'>
-					<button
-						id='closeButton'
-						className='window-control window-control-close'
-					/>
+			<Header onMinimize={minimize} showHotkey={true} />
+
+			<main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10 scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-bg-secondary">
+				<div className="flex flex-col gap-6 w-full max-w-[1800px] mx-auto">
+					<TeamColumn teamId={100} participants={team100} teamName="Blue Team" />
+
+					<TeamColumn teamId={200} participants={team200} teamName="Red Team" />
 				</div>
-			</header>
 
-			<main className='cards-container'>
-				<div className='team-column'>
-					<div className='team-row'>
-						{team100.map((p, index) => (
-							<div className='card' key={index}>
-								<div className='header'>{p.summonerName || 'UNKNOWN'}</div>
-
-								<div className='champ-info'>
-									<img
-										className='champ-icon'
-										src={`https://cdn.communitydragon.org/15.8.1/champion/${p.championName}/square`}
-										alt={p.championName}
-									/>
-									<div className='champ-text'>
-										<div>{p.championName}</div>
-										<div>GAMES W/R</div>
-										<div>
-											Mastery: {p.mastery.level} ({p.mastery.points})
-										</div>
-									</div>
-								</div>
-
-								<div className='rank-section'>
-									<img
-										className='rank-icon'
-										src={`../../public/img/ranks/${p.tier}.png`}
-										alt={p.tier}
-									/>
-									<div className='rank-text'>
-										{p.tier} {p.rank}
-										<br />
-										S25.S1 WR (GAMESPLAYED)
-										<br />
-										SERVER RANK
-									</div>
-								</div>
-
-								<div className='roles'>MAIN ROLES: UNKNOWN</div>
-
-								<div className='stats'>
-									<div className='stats-item'>
-										12H: 20
-										<div className='tooltip-content'>
-											<h4>Recent Matches</h4>
-											<ul>
-												{p.stats?.recentMatches?.map((match: any, i: any) => (
-													<li key={i}>
-														{match.champion}: {match.kda} ({match.mode})
-													</li>
-												))}
-											</ul>
-										</div>
-									</div>
-
-									<div className='stats-item'>
-										LAST 20M WR
-										<div className='tooltip-content'>
-											<h4>Top Champions</h4>
-											<ul>
-												{p.stats?.topChampions?.map((champion: any, i: any) => (
-													<li key={i}>
-														{champion.champion}: {champion.winRate} (
-														{champion.games} games)
-													</li>
-												))}
-											</ul>
-										</div>
-									</div>
-								</div>
-
-								<div className='abilities'>
-									{Object.entries(p.ability).map(([key, value]: any) => (
-										<div className='ability' key={key}>
-											<div className='ability-label'>{key.toUpperCase()}</div>
-											<img
-												className='ability-icon'
-												src={`https://cdn.communitydragon.org/15.8.1/champion/${p.championName}/ability-icon/${key}`}
-											/>
-											<div className='tooltip-content'>
-												<h4>{key.toUpperCase()} Description</h4>
-												<p>{value}</p>
-											</div>
-										</div>
-									))}
-								</div>
-							</div>
-						))}
+				{/* Debug info in development */}
+				{import.meta.env.DEV && (
+					<div className="fixed bottom-2.5 right-2.5 bg-black/80 border border-primary/30 rounded-md px-3 py-2 text-[11px] font-mono text-secondary z-[9999]">
+						<p className="m-0">
+							Live: {isGameLive ? "✓" : "✗"} | Players: {participants.length} | Blue: {team100.length} | Red:{" "}
+							{team200.length}
+						</p>
 					</div>
-				</div>
-
-				<div className='team-column team-200'>
-					<div className='team-row'>
-						{team200.map((p, index) => (
-							<div className='card' key={index}>
-								<div className='header'>{p.summonerName || 'UNKNOWN'}</div>
-
-								<div className='champ-info'>
-									<img
-										className='champ-icon'
-										src={`https://cdn.communitydragon.org/15.8.1/champion/${p.championName}/square`}
-										alt={p.championName}
-									/>
-									<div className='champ-text'>
-										<div>{p.championName}</div>
-										<div>GAMES W/R</div>
-										<div>
-											Mastery: {p.mastery.level} ({p.mastery.points})
-										</div>
-									</div>
-								</div>
-
-								<div className='rank-section'>
-									<img
-										className='rank-icon'
-										src={`../../public/img/ranks/${p.tier}.png`}
-										alt={p.tier}
-									/>
-									<div className='rank-text'>
-										{p.tier} {p.rank}
-										<br />
-										S25.S1 WR (GAMESPLAYED)
-										<br />
-										SERVER RANK
-									</div>
-								</div>
-
-								<div className='roles'>MAIN ROLES: MID</div>
-
-								<div className='stats'>
-									<div className='stats-item'>
-										<span>12H: {p.stats?.recentMatches?.length || 0}</span>
-										<div className='tooltip'>
-											<div className='tooltip-content'>
-												<h4>Recent Matches</h4>
-												<ul>
-													{p.stats?.recentMatches?.map((match: any, i: any) => (
-														<li key={i}>
-															{match.champion}: {match.kda} ({match.mode})
-														</li>
-													))}
-												</ul>
-											</div>
-										</div>
-									</div>
-									<div className='stats-item'>
-										<span>LAST 20M WR</span>
-										<div className='tooltip'>
-											<div className='tooltip-content'>
-												<h4>Top Champions</h4>
-												<ul>
-													{p.stats?.topChampions?.map(
-														(champion: any, i: any) => (
-															<li key={i}>
-																{champion.champion}: {champion.winRate} (
-																{champion.games} games)
-															</li>
-														)
-													)}
-												</ul>
-											</div>
-										</div>
-									</div>
-								</div>
-
-								<div className='abilities'>
-									{Object.entries(p.ability).map(([key, value]: any) => (
-										<div className='ability' key={key}>
-											<div className='ability-label'>{key.toUpperCase()}</div>
-											<img
-												className='ability-icon'
-												src={`https://cdn.communitydragon.org/15.8.1/champion/${p.championName}/ability-icon/${key}`}
-											/>
-											<div className='tooltip-content'>
-												<h4>{key.toUpperCase()} Description</h4>
-												<p>{value}</p>
-											</div>
-										</div>
-									))}
-								</div>
-							</div>
-						))}
-					</div>
-				</div>
+				)}
 			</main>
 		</div>
-	)
-}
+	);
+};
 
-export default OverlayComponent
+export default OverlayComponent;
