@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&family=Roboto:wght@400;700&display=swap');
+
+*,
+*:before,
+*:after {
+	font-size: inherit;
+	font-family: inherit;
+	font-weight: inherit;
+	font-style: inherit;
+	user-select: none;
+}
+
+body {
+	font-family: 'Roboto', sans-serif;
+}
+
+h1,
+h2 {
+	margin: 0;
+	cursor: default;
+	user-select: none;
+}
+
+button {
+	padding: 0;
+	border: none;
+	user-select: none;
+}
+
+button:focus {
+	outline: none;
+	user-select: none;
+}
