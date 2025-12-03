@@ -330,6 +330,25 @@ Contributions are welcome! Please follow these guidelines:
 - Use meaningful variable names
 - Keep components small and focused
 
+## 🔧 Configuration & Setup
+
+### Backend Server
+
+This app **requires** a backend server. Quick options:
+
+1. **Development (Mock Data):** Use the mock server example in [BACKEND_SETUP.md](BACKEND_SETUP.md)
+2. **Production:** Implement a real backend with Riot Games API
+   - Get API key from [Riot Developer Portal](https://developer.riotgames.com/)
+   - See backend examples in [BACKEND_SETUP.md](BACKEND_SETUP.md)
+
+### Error Handling
+
+The app now includes:
+- ✅ Exponential backoff on backend errors
+- ✅ Increased polling interval (10s instead of 5s)
+- ✅ Better error messages for common issues
+- ✅ Automatic retry with backoff multiplier
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

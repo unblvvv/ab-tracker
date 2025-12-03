@@ -65,13 +65,27 @@ class BackendService {
 					statusCode: response.status,
 				}));
 
+				// Create more descriptive error message based on status code
+				let errorMessage = errorData.message || response.statusText;
+
+				if (response.status === 500) {
+					errorMessage = "Backend server error. Please check if the backend is running and configured correctly.";
+				} else if (response.status === 404) {
+					errorMessage = "Account not found. The summoner might not be in an active game.";
+				} else if (response.status === 429) {
+					errorMessage = "Too many requests. Please wait before trying again.";
+				} else if (response.status >= 500) {
+					errorMessage = "Backend server error. Please try again later.";
+				}
+
 				logger.error("Backend API error", {
 					url,
 					status: response.status,
 					error: errorData,
+					message: errorMessage,
 				});
 
-				throw new Error(errorData.message || `Backend error: ${response.status}`);
+				throw new Error(errorMessage);
 			}
 
 			const data = await response.json();
@@ -79,6 +93,12 @@ class BackendService {
 
 			return data as T;
 		} catch (error) {
+			// Don't log network errors as ERROR if it's just connection refused
+			if (error instanceof TypeError && error.message.includes("fetch")) {
+				logger.warn("Backend connection failed - is the backend server running?", { url });
+				throw new Error("Cannot connect to backend server. Please make sure it's running on localhost:8080");
+			}
+
 			logger.error("Failed to fetch from backend", { url, error });
 			throw error;
 		}
