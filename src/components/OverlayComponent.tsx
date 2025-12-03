@@ -21,7 +21,7 @@ const OverlayComponent: React.FC = () => {
 	});
 
 	// Game participants data
-	const { participants, isLoading, isGameLive, error } = useGameParticipants({
+	const { participants, isLoading, isGameLive, error, refetch, reset } = useGameParticipants({
 		enabled: true,
 		onGameStart: (participants) => {
 			logger.info("Game started!", { participantCount: participants.length });
@@ -30,6 +30,13 @@ const OverlayComponent: React.FC = () => {
 			logger.info("Game ended!");
 		},
 	});
+
+	// Manual refresh handler
+	const handleManualRefresh = () => {
+		logger.info("Manual refresh triggered");
+		reset();
+		refetch();
+	};
 
 	// Group participants by team
 	const { team100, team200 } = useMemo(() => {
@@ -94,6 +101,25 @@ const OverlayComponent: React.FC = () => {
 			<Header onMinimize={minimize} showHotkey={true} />
 
 			<main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10 scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-bg-secondary">
+				{/* Data loaded indicator */}
+				{!isLoading && participants.length > 0 && (
+					<div className="mb-4 px-4 py-3 bg-success/10 border border-success/30 rounded-lg flex items-center justify-between">
+						<div className="flex-1 text-center">
+							<p className="text-success text-sm font-semibold m-0">
+								✓ Game data loaded successfully! ({participants.length} players)
+							</p>
+							<p className="text-success/70 text-xs m-0 mt-1">Data will update automatically when the game ends</p>
+						</div>
+						<button
+							onClick={handleManualRefresh}
+							className="ml-4 px-3 py-1.5 bg-success/20 hover:bg-success/30 border border-success/40 rounded-md text-success text-xs font-semibold transition-colors duration-base"
+							title="Force refresh data"
+						>
+							↻ Refresh
+						</button>
+					</div>
+				)}
+
 				<div className="flex flex-col gap-6 w-full max-w-[1800px] mx-auto">
 					<TeamColumn teamId={100} participants={team100} teamName="Blue Team" />
 

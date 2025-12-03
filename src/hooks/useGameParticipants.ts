@@ -46,6 +46,7 @@ export function useGameParticipants(options: UseGameParticipantsOptions = {}): U
 	const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
 	const [errorCount, setErrorCount] = useState(0);
 	const [currentPollingInterval, setCurrentPollingInterval] = useState(pollingInterval);
+	const [shouldStopPolling, setShouldStopPolling] = useState(false);
 
 	/**
 	 * Fetch participants data from backend
@@ -60,9 +61,12 @@ export function useGameParticipants(options: UseGameParticipantsOptions = {}): U
 			if (!gameLive) {
 				logger.debug("Game is not live");
 
-				// If game was live before, trigger onGameEnd
-				if (isGameLive && onGameEnd) {
-					onGameEnd();
+				// If game was live before, trigger onGameEnd and reset
+				if (isGameLive) {
+					logger.info("Game ended. Resetting state and restarting polling.");
+					if (onGameEnd) {
+						onGameEnd();
+					}
 				}
 
 				setIsGameLive(false);
@@ -70,18 +74,19 @@ export function useGameParticipants(options: UseGameParticipantsOptions = {}): U
 				setHasFetchedOnce(false);
 				setErrorCount(0);
 				setCurrentPollingInterval(pollingInterval);
+				setShouldStopPolling(false); // Resume polling for next game
 				setError(null);
 				return;
 			}
 
 			setIsGameLive(true);
 
-			// If we already have participants, don't fetch again
+			// If we already have participants, stop polling completely
 			if (hasFetchedOnce && participants.length > 0) {
-				logger.debug("Using cached participants data");
+				logger.info("Participants data already loaded. Stopping polling to prevent data loss.");
+				setShouldStopPolling(true);
 				setError(null);
 				setErrorCount(0);
-				setCurrentPollingInterval(pollingInterval);
 				return;
 			}
 
@@ -98,14 +103,17 @@ export function useGameParticipants(options: UseGameParticipantsOptions = {}): U
 				setHasFetchedOnce(true);
 				setError(null);
 				setErrorCount(0);
-				setCurrentPollingInterval(pollingInterval);
+				setShouldStopPolling(true); // Stop polling after successful fetch
 
-				logger.info(`Fetched ${newParticipants.length} participants`, {
-					teams: {
-						blue: newParticipants.filter((p) => p.teamId === 100).length,
-						red: newParticipants.filter((p) => p.teamId === 200).length,
+				logger.info(
+					`Successfully fetched ${newParticipants.length} participants. Polling stopped. Will resume when game ends.`,
+					{
+						teams: {
+							blue: newParticipants.filter((p) => p.teamId === 100).length,
+							red: newParticipants.filter((p) => p.teamId === 200).length,
+						},
 					},
-				});
+				);
 
 				// Trigger onGameStart callback
 				if (onGameStart && !hasFetchedOnce) {
@@ -149,8 +157,11 @@ export function useGameParticipants(options: UseGameParticipantsOptions = {}): U
 		setIsGameLive(false);
 		setError(null);
 		setHasFetchedOnce(false);
+		setShouldStopPolling(false);
+		setErrorCount(0);
+		setCurrentPollingInterval(pollingInterval);
 		logger.debug("Game participants state reset");
-	}, []);
+	}, [pollingInterval]);
 
 	/**
 	 * Set up polling interval
@@ -159,6 +170,36 @@ export function useGameParticipants(options: UseGameParticipantsOptions = {}): U
 		if (!enabled) {
 			logger.debug("Game participants polling disabled");
 			return;
+		}
+
+		// Don't stop polling completely - we need to detect game end
+		// Just skip fetching participants if we already have data
+		if (shouldStopPolling) {
+			logger.debug("Participants loaded. Checking game state only...");
+
+			// Still check if game is live to detect game end
+			const checkGameEnd = async () => {
+				const gameLive = await riotClientService.isGameLive();
+				if (!gameLive && isGameLive) {
+					logger.info("Game ended. Clearing data and resuming polling.");
+					setIsGameLive(false);
+					setParticipants([]);
+					setHasFetchedOnce(false);
+					setShouldStopPolling(false);
+					setError(null);
+					if (onGameEnd) {
+						onGameEnd();
+					}
+				}
+			};
+
+			// Check for game end every 5 seconds
+			checkGameEnd();
+			const interval = setInterval(checkGameEnd, 5000);
+
+			return () => {
+				clearInterval(interval);
+			};
 		}
 
 		logger.info("Starting game participants polling", {
@@ -176,7 +217,7 @@ export function useGameParticipants(options: UseGameParticipantsOptions = {}): U
 			logger.info("Stopping game participants polling");
 			clearInterval(interval);
 		};
-	}, [enabled, currentPollingInterval, fetchParticipants, errorCount]);
+	}, [enabled, currentPollingInterval, fetchParticipants, errorCount, shouldStopPolling]);
 
 	return {
 		participants,
