@@ -8,7 +8,7 @@
 
 ## 🎮 Features
 
-- **Real-time Champion Information**: Display champion details for all players in your match
+- **Real-time Champion Information**: Display champion details
 - **Ability Tracking**: View all champion abilities with descriptions and cooldowns
 - **Ranked Statistics**: Shows player rank, mastery level, and win rates
 - **Team Organization**: Automatically groups players by team (Blue/Red)
@@ -280,38 +280,6 @@ Custom backend endpoints (requires separate backend service):
 - `GET /summoner/:summonerId` - Summoner details
 - `GET /match/:matchId` - Match history
 
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Overlay not appearing:**
-- Check if Overwolf is running
-- Verify League of Legends is detected
-- Check hotkey bindings in Overwolf settings
-
-**No participant data:**
-- Ensure backend service is running on `localhost:8080`
-- Check browser console for API errors
-- Verify game is in progress (not in lobby)
-
-**Performance issues:**
-- Reduce polling interval in settings
-- Disable animations for better performance
-- Check for console errors
-
-### Debug Mode
-
-Enable debug mode in development:
-
-```typescript
-// In OverlayComponent.tsx
-{import.meta.env.DEV && (
-  <div className="overlay-debug">
-    {/* Debug info displayed here */}
-  </div>
-)}
-```
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please follow these guidelines:
@@ -330,25 +298,6 @@ Contributions are welcome! Please follow these guidelines:
 - Use meaningful variable names
 - Keep components small and focused
 
-## 🔧 Configuration & Setup
-
-### Backend Server
-
-This app **requires** a backend server. Quick options:
-
-1. **Development (Mock Data):** Use the mock server example in [BACKEND_SETUP.md](BACKEND_SETUP.md)
-2. **Production:** Implement a real backend with Riot Games API
-   - Get API key from [Riot Developer Portal](https://developer.riotgames.com/)
-   - See backend examples in [BACKEND_SETUP.md](BACKEND_SETUP.md)
-
-### Error Handling
-
-The app now includes:
-- ✅ Exponential backoff on backend errors
-- ✅ Increased polling interval (10s instead of 5s)
-- ✅ Better error messages for common issues
-- ✅ Automatic retry with backoff multiplier
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -358,23 +307,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Overwolf](https://www.overwolf.com/) - Application platform
 - [Community Dragon](https://communitydragon.org/) - Champion assets
 - [Riot Games](https://www.riotgames.com/) - League of Legends API
-
-## 📞 Support
-
-For support, please:
-- Open an issue on GitHub
-- Check existing issues for solutions
-- Join our Discord community
-
-## 🗺️ Roadmap
-
-- [ ] Live ability cooldown tracking
-- [ ] Multi-language support
-- [ ] Custom themes
-- [ ] Performance analytics
-- [ ] Replay system integration
-- [ ] Voice communication integration
-- [ ] Mobile companion app
 
 ---
 
