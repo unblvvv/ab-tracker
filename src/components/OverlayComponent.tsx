@@ -13,131 +13,115 @@ import { TeamColumn } from "./TeamColumn/TeamColumn";
 import { logger } from "../utils/logger.utils";
 
 const OverlayComponent: React.FC = () => {
-	// Window controls
-	const { minimize } = useOverwolfWindow({
-		windowName: WINDOW_NAMES.IN_GAME,
-		enableDrag: true,
-		dragElementId: "header",
-	});
+  // Window controls
+  const { minimize } = useOverwolfWindow({
+    windowName: WINDOW_NAMES.IN_GAME,
+    enableDrag: true,
+    dragElementId: "header",
+  });
 
-	// Game participants data
-	const { participants, isLoading, isGameLive, error, refetch, reset } = useGameParticipants({
-		enabled: true,
-		onGameStart: (participants) => {
-			logger.info("Game started!", { participantCount: participants.length });
-		},
-		onGameEnd: () => {
-			logger.info("Game ended!");
-		},
-	});
+  // Game participants data
+  const { participants, isLoading, isGameLive, error } = useGameParticipants({
+    enabled: true,
+    onGameStart: (participants) => {
+      logger.info("Game started!", { participantCount: participants.length });
+    },
+    onGameEnd: () => {
+      logger.info("Game ended!");
+    },
+  });
 
-	// Manual refresh handler
-	const handleManualRefresh = () => {
-		logger.info("Manual refresh triggered");
-		reset();
-		refetch();
-	};
+  // Group participants by team
+  const { team100, team200 } = useMemo(() => {
+    return groupParticipantsByTeam(participants);
+  }, [participants]);
 
-	// Group participants by team
-	const { team100, team200 } = useMemo(() => {
-		return groupParticipantsByTeam(participants);
-	}, [participants]);
+  // Render loading state
+  if (isLoading && participants.length === 0) {
+    return (
+      <div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
+        <div className="gradient-bg" />
+        <Header onMinimize={minimize} />
+        <main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10">
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-5">
+            <div className="loading-spinner" />
+            <p className="text-text-tertiary text-base font-medium m-0 animate-pulse">
+              Loading game data...
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
-	// Render loading state
-	if (isLoading && participants.length === 0) {
-		return (
-			<div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
-				<div className="gradient-bg" />
-				<Header onMinimize={minimize} />
-				<main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10">
-					<div className="flex flex-col items-center justify-center min-h-[400px] gap-5">
-						<div className="loading-spinner" />
-						<p className="text-text-tertiary text-base font-medium m-0 animate-pulse">Loading game data...</p>
-					</div>
-				</main>
-			</div>
-		);
-	}
+  // Render error state
+  if (error && !isGameLive) {
+    return (
+      <div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
+        <div className="gradient-bg" />
+        <Header onMinimize={minimize} />
+        <main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10">
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-center p-10">
+            <p className="text-error text-lg font-semibold m-0">
+              Waiting for game to start...
+            </p>
+            <span className="text-text-tertiary text-sm italic">{error}</span>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
-	// Render error state
-	if (error && !isGameLive) {
-		return (
-			<div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
-				<div className="gradient-bg" />
-				<Header onMinimize={minimize} />
-				<main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10">
-					<div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-center p-10">
-						<p className="text-error text-lg font-semibold m-0">Waiting for game to start...</p>
-						<span className="text-text-tertiary text-sm italic">{error}</span>
-					</div>
-				</main>
-			</div>
-		);
-	}
+  // Render empty state
+  if (!isGameLive || participants.length === 0) {
+    return (
+      <div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
+        <div className="gradient-bg" />
+        <Header onMinimize={minimize} />
+        <main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10">
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center p-10">
+            <h2 className="text-2xl font-bold m-0 gradient-text">
+              Waiting for game...
+            </h2>
+            <p className="text-text-tertiary text-base m-0 max-w-md leading-relaxed">
+              Start a League of Legends match to see participant information.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
-	// Render empty state
-	if (!isGameLive || participants.length === 0) {
-		return (
-			<div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
-				<div className="gradient-bg" />
-				<Header onMinimize={minimize} />
-				<main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10">
-					<div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center p-10">
-						<h2 className="text-2xl font-bold m-0 gradient-text">Waiting for game...</h2>
-						<p className="text-text-tertiary text-base m-0 max-w-md leading-relaxed">
-							Start a League of Legends match to see participant information.
-						</p>
-					</div>
-				</main>
-			</div>
-		);
-	}
+  // Render main overlay with teams
+  return (
+    <div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
+      <div className="gradient-bg" />
 
-	// Render main overlay with teams
-	return (
-		<div className="relative w-full h-screen overflow-hidden bg-bg-primary flex flex-col">
-			<div className="gradient-bg" />
+      <Header onMinimize={minimize} showHotkey={true} />
 
-			<Header onMinimize={minimize} showHotkey={true} />
+      <main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10 scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-bg-secondary">
+        <div className="flex flex-col gap-6 w-full max-w-[1800px] mx-auto">
+          <TeamColumn
+            teamId={100}
+            participants={team100}
+            teamName="Blue Team"
+          />
 
-			<main className="flex-1 flex flex-col px-5 py-5 overflow-y-auto overflow-x-hidden relative z-10 scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-bg-secondary">
-				{/* Data loaded indicator */}
-				{!isLoading && participants.length > 0 && (
-					<div className="mb-4 px-4 py-3 bg-success/10 border border-success/30 rounded-lg flex items-center justify-between">
-						<div className="flex-1 text-center">
-							<p className="text-success text-sm font-semibold m-0">
-								✓ Game data loaded successfully! ({participants.length} players)
-							</p>
-							<p className="text-success/70 text-xs m-0 mt-1">Data will update automatically when the game ends</p>
-						</div>
-						<button
-							onClick={handleManualRefresh}
-							className="ml-4 px-3 py-1.5 bg-success/20 hover:bg-success/30 border border-success/40 rounded-md text-success text-xs font-semibold transition-colors duration-base"
-							title="Force refresh data"
-						>
-							↻ Refresh
-						</button>
-					</div>
-				)}
+          <TeamColumn teamId={200} participants={team200} teamName="Red Team" />
+        </div>
 
-				<div className="flex flex-col gap-6 w-full max-w-[1800px] mx-auto">
-					<TeamColumn teamId={100} participants={team100} teamName="Blue Team" />
-
-					<TeamColumn teamId={200} participants={team200} teamName="Red Team" />
-				</div>
-
-				{/* Debug info in development */}
-				{import.meta.env.DEV && (
-					<div className="fixed bottom-2.5 right-2.5 bg-black/80 border border-primary/30 rounded-md px-3 py-2 text-[11px] font-mono text-secondary z-[9999]">
-						<p className="m-0">
-							Live: {isGameLive ? "✓" : "✗"} | Players: {participants.length} | Blue: {team100.length} | Red:{" "}
-							{team200.length}
-						</p>
-					</div>
-				)}
-			</main>
-		</div>
-	);
+        {/* Debug info in development */}
+        {import.meta.env.DEV && (
+          <div className="fixed bottom-2.5 right-2.5 bg-black/80 border border-primary/30 rounded-md px-3 py-2 text-[11px] font-mono text-secondary z-[9999]">
+            <p className="m-0">
+              Live: {isGameLive ? "✓" : "✗"} | Players: {participants.length} |
+              Blue: {team100.length} | Red: {team200.length}
+            </p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
 };
 
 export default OverlayComponent;
