@@ -236,7 +236,7 @@ Key configuration in `src/ui/manifest.json`:
 {
   "game_targeting": {
     "type": "dedicated",
-    "game_ids": [5426, 10902]  // LoL + LoL PBE
+    "game_ids": [5426, 10902]
   },
   "hotkeys": {
     "show_hide_in_game": {
