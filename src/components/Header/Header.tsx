@@ -22,14 +22,16 @@ export const Header: React.FC<HeaderProps> = ({ onClose, onMinimize, dragElement
 	return (
 		<header
 			id={dragElementId}
-			className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-bg-secondary/95 to-bg-elevated/95 border-b border-white/10 backdrop-blur-glass cursor-move select-none z-[1000] animate-slide-down"
+			className="flex items-center justify-between px-6 py-3 backdrop-blur-strong bg-bg-body/60 border-b border-border cursor-move select-none z-[100] animate-slide-down"
 		>
-			<h1 className="text-lg font-bold tracking-wide gradient-text m-0">AbTracker</h1>
+			<div className="flex items-center gap-2">
+				<h1 className="text-lg font-bold m-0 text-text-primary tracking-tight">AbTracker</h1>
+			</div>
 
 			{showHotkey && (
-				<div className="flex items-center gap-2 flex-1 justify-center">
-					<span className="text-[13px] text-text-tertiary font-medium">Show/Hide Hotkey:</span>
-					<kbd className="inline-block px-3 py-1 bg-primary/20 border border-primary/40 rounded text-secondary font-mono text-xs font-semibold min-w-[60px] text-center shadow-glow">
+				<div className="flex items-center gap-2">
+					<span className="text-xs text-text-tertiary font-medium uppercase tracking-wide">Hotkey</span>
+					<kbd className="px-3 py-1 bg-bg-surface border border-primary/30 rounded-md font-mono text-xs font-semibold text-primary min-w-[60px] text-center">
 						{binding || "Not Set"}
 					</kbd>
 				</div>
@@ -39,22 +41,22 @@ export const Header: React.FC<HeaderProps> = ({ onClose, onMinimize, dragElement
 				{onMinimize && (
 					<button
 						onClick={onMinimize}
-						className="w-8 h-8 flex items-center justify-center bg-white/5 border border-white/10 rounded-md cursor-pointer transition-all duration-base hover:bg-white/10 hover:border-white/20 hover:-translate-y-px active:translate-y-0 hover:bg-secondary/20 hover:border-secondary/40 focus-visible"
+						className="w-7 h-7 flex items-center justify-center bg-bg-surface border border-border rounded-md transition-all duration-base hover:bg-bg-surface-hover hover:border-border-light active:scale-95"
 						aria-label="Minimize"
 						title="Minimize"
 					>
-						<span className="text-xl font-normal text-white leading-none">−</span>
+						<span className="text-text-secondary text-lg font-light leading-none">−</span>
 					</button>
 				)}
 
 				{onClose && (
 					<button
 						onClick={onClose}
-						className="w-8 h-8 flex items-center justify-center bg-white/5 border border-white/10 rounded-md cursor-pointer transition-all duration-base hover:bg-white/10 hover:border-white/20 hover:-translate-y-px active:translate-y-0 hover:bg-error/20 hover:border-error/40 focus-visible"
+						className="w-7 h-7 flex items-center justify-center bg-bg-surface border border-border rounded-md transition-all duration-base hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 active:scale-95"
 						aria-label="Close"
 						title="Close"
 					>
-						<span className="text-xl font-normal text-white leading-none">×</span>
+						<span className="text-text-secondary text-lg font-light leading-none">×</span>
 					</button>
 				)}
 			</div>
