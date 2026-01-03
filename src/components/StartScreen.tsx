@@ -1,5 +1,5 @@
 const StartScreen = () => {
-	return <h1>AbTracker</h1>
-}
+  return <h1>AbTracker</h1>;
+};
 
-export default StartScreen
+export default StartScreen;

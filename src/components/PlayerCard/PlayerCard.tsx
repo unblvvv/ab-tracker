@@ -64,8 +64,8 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       <div className="flex items-center gap-2.5 mb-3 p-2 bg-bg-elevated/50 rounded-lg">
         <img
           className="w-[45px] h-[45px] object-contain"
-          src={ASSET_PATHS.RANK_ICON(tier)}
-          alt={tier}
+          src={ASSET_PATHS.RANK_ICON(tier && rank ? tier : "UNRANKED")}
+          alt={tier || "UNRANKED"}
           onError={(e) => {
             e.currentTarget.src = ASSET_PATHS.RANK_ICON("UNRANKED");
           }}
@@ -86,10 +86,10 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       </div>
 
       {/* Main Roles */}
-      <div className="text-[9px] mb-3 px-2 py-1.5 bg-bg-elevated/30 rounded-md text-center">
+      {/*<div className="text-[9px] mb-3 px-2 py-1.5 bg-bg-elevated/30 rounded-md text-center">
         <span className="text-text-tertiary mr-1">Main Roles:</span>
         <span className="text-white font-semibold">Unknown</span>
-      </div>
+      </div>*/}
 
       {/* Stats Section */}
       {showStats && stats && (
@@ -169,9 +169,16 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
       {/* Abilities Section */}
       {showAbilities && ability && (
         <div className="flex justify-between gap-1.5">
-          {Object.entries(ability).map(([key, description]) => {
+          {Object.entries(ability).map(([key, abilityData]) => {
             // Skip passive if not needed
             if (key === "passive") return null;
+
+            const abilityIconUrl = ASSET_PATHS.ABILITY_ICON(abilityData.name);
+            console.log(`[PlayerCard] Ability ${key}:`, {
+              championName,
+              abilityName: abilityData.name,
+              iconUrl: abilityIconUrl,
+            });
 
             return (
               <div
@@ -183,20 +190,24 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
                 </div>
                 <img
                   className="w-7 h-7 rounded-md border border-primary/30 transition-all duration-base object-cover group-hover:border-primary/80 group-hover:scale-110 group-hover:shadow-glow"
-                  src={ASSET_PATHS.ABILITY_ICON(championName, key)}
+                  src={abilityIconUrl}
                   alt={`${championName} ${key.toUpperCase()}`}
                   loading="lazy"
                   onError={(e) => {
+                    console.error(`[PlayerCard] Failed to load ability icon:`, {
+                      key,
+                      url: abilityIconUrl,
+                    });
                     e.currentTarget.style.display = "none";
                   }}
                 />
-                {description && (
+                {abilityData.description && (
                   <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-bg-primary border-2 border-primary/60 rounded-lg p-4 w-[280px] z-[1000] shadow-2xl animate-fade-in backdrop-blur-sm">
                     <h4 className="m-0 mb-3 text-sm font-bold text-secondary border-b-2 border-secondary/30 pb-2">
                       {key.toUpperCase()} Ability
                     </h4>
                     <p className="m-0 text-[11px] leading-relaxed text-white">
-                      {description}
+                      {abilityData.description}
                     </p>
                   </div>
                 )}
