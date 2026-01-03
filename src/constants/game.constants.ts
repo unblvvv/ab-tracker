@@ -58,7 +58,7 @@ export const REQUIRED_FEATURES = ["summoner_info", "match_info"] as const;
 
 // Polling intervals (in milliseconds)
 export const POLLING_INTERVALS = {
-	GAME_STATE: 10000, // 10 seconds - reduced polling to avoid spam
+	GAME_STATE: 60000, // 60 seconds
 	STATS_UPDATE: 5000, // 5 seconds
 	ABILITY_COOLDOWN: 1000, // 1 second
 } as const;
